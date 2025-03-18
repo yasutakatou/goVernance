@@ -1,22 +1,28 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"time"
-
-	"gopkg.in/ini.v1"
 )
 
 var (
-	debug, logging                        bool
-	define, whitelist, blacklist, defines []string
+	debug, logging               bool
+	define, whitelist, blacklist []string
+	defines                      []defineStruct
 )
+
+type defineStruct struct {
+	Name    string
+	Command string
+	Limit   int
+	Alert   string
+}
 
 func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
@@ -31,9 +37,9 @@ func main() {
 
 	loadConfig(*_Config)
 
-	// define run
-
 	loadDefine(*_Define)
+
+	// define run
 
 	os.Exit(0)
 }
@@ -84,43 +90,41 @@ func urlget(url string) string {
 	return string(byteArray)
 }
 
-func loadConfig(configFile string) {
-	loadOptions := ini.LoadOptions{}
-	loadOptions.UnparseableSections = []string{"define", "whitelist", "blacklist"}
-
-	cfg, err := ini.LoadSources(loadOptions, configFile)
-	if err != nil {
-		fmt.Printf("Fail to read config file: %v", err)
-		os.Exit(1)
-	}
-
-	define = setStructs("define", cfg.Section("define").Body())
-	whitelist = setStructs("whitelist", cfg.Section("whitelist").Body())
-	blacklist = setStructs("blacklist", cfg.Section("blacklist").Body())
-}
-
-func setStructs(configType, datas string) []string {
+func configRead(filename, sectionName string) []string {
 	var strs []string
-	debugLog(" -- " + configType + " --")
+	rFlag := false
 
-	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(datas, -1) {
-		if len(v) > 0 {
-			strs = append(strs, v)
-			debugLog(v)
+	debugLog(" -- [" + sectionName + "] --")
+	data, _ := os.Open(filename)
+	defer data.Close()
+
+	scanner := bufio.NewScanner(data)
+	for scanner.Scan() {
+		str := scanner.Text()
+		if len(str) > 0 {
+			if rFlag == true && str[0] == 91 {
+				break
+			} else {
+				if rFlag == true {
+					debugLog(str)
+					strs = append(strs, str)
+				}
+			}
+
+			if "["+sectionName+"]" == str {
+				rFlag = true
+			}
 		}
 	}
 	return strs
 }
 
-func loadDefine(defineFile string) {
-	//loadOptions := ini.LoadOptions{}
-	//loadOptions.UnparseableSections = []string{"define"}
+func loadConfig(filename string) {
+	define = configRead(filename, "define")
+	whitelist = configRead(filename, "whitelist")
+	blacklist = configRead(filename, "blacklist")
+}
 
-	cfg, err := ini.Load(defineFile)
-	if err != nil {
-		fmt.Printf("Fail to read config file: %v", err)
-		os.Exit(1)
-	}
-
-	defines = setStructs("define", cfg.Section("define").Body())
+func loadDefine(filename string) {
+	defines = configRead(filename, "define")
 }
