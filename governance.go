@@ -14,21 +14,26 @@ import (
 )
 
 var (
-	debug, logging               bool
-	define, whitelist, blacklist []string
+	debug, logging                        bool
+	define, whitelist, blacklist, defines []string
 )
 
 func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
-	_Define := flag.String("define", "governance.ini", "[-define=config file)]")
+	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
+	_Define := flag.String("define", "define.ini", "[-define=define file)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 
-	loadConfig(*_Define)
+	loadConfig(*_Config)
+
+	// define run
+
+	loadDefine(*_Define)
 
 	os.Exit(0)
 }
@@ -105,4 +110,17 @@ func setStructs(configType, datas string) []string {
 		}
 	}
 	return strs
+}
+
+func loadDefine(defineFile string) {
+	//loadOptions := ini.LoadOptions{}
+	//loadOptions.UnparseableSections = []string{"define"}
+
+	cfg, err := ini.Load(defineFile)
+	if err != nil {
+		fmt.Printf("Fail to read config file: %v", err)
+		os.Exit(1)
+	}
+
+	defines = setStructs("define", cfg.Section("define").Body())
 }
