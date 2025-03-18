@@ -3,26 +3,32 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"time"
+
+	"gopkg.in/ini.v1"
 )
 
 var (
-	debug, logging bool
+	debug, logging               bool
+	define, whitelist, blacklist []string
 )
 
 func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
+	_Define := flag.String("define", "governance.ini", "[-define=config file)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
+
+	loadConfig(*_Define)
 
 	os.Exit(0)
 }
@@ -68,9 +74,8 @@ func urlget(url string) string {
 
 	resp, _ := http.Get(url)
 	defer resp.Body.Close()
-
-	byteArray, _ := ioutil.ReadAll(resp.Body)
-
+	byteArray, _ := io.ReadAll(resp.Body)
+	debugLog(string(byteArray))
 	return string(byteArray)
 }
 
@@ -84,12 +89,9 @@ func loadConfig(configFile string) {
 		os.Exit(1)
 	}
 
-	ocr = ""
-	linter = ""
-
-	setStructs("define", cfg.Section("define").Body())
-	setStructs("whitelist", cfg.Section("whitelist").Body())
-	setStructs("blacklist", cfg.Section("blacklist").Body())
+	define = setStructs("define", cfg.Section("define").Body())
+	whitelist = setStructs("whitelist", cfg.Section("whitelist").Body())
+	blacklist = setStructs("blacklist", cfg.Section("blacklist").Body())
 }
 
 func setStructs(configType, datas string) []string {
