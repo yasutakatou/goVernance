@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,7 +21,7 @@ var (
 
 type defineStruct struct {
 	Name    string
-	Command string
+	Command []string
 	Limit   int
 	Alert   string
 }
@@ -37,9 +39,9 @@ func main() {
 
 	loadConfig(*_Config)
 
-	loadDefine(*_Define)
-
 	// define run
+
+	loadDefine(*_Define)
 
 	os.Exit(0)
 }
@@ -126,5 +128,17 @@ func loadConfig(filename string) {
 }
 
 func loadDefine(filename string) {
-	defines = configRead(filename, "define")
+	strs := configRead(filename, "define")
+
+	for i := 0; i < len(strs); i++ {
+		splitStr := strings.Split(strs[i], "\t")
+		if len(splitStr) == 2 {
+			commands := configRead(filename, splitStr[0])
+			convInt, err := strconv.Atoi(splitStr[1])
+			if err == nil {
+				defines = append(defines, defineStruct{Name: splitStr[0], Command: commands, Limit: convInt, Alert: splitStr[2]})
+			}
+		}
+	}
+	fmt.Println(defines)
 }
