@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -13,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/andreyvit/diff"
 )
 
 var (
@@ -42,49 +42,95 @@ func main() {
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
 	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow all but the whitelist (true is enable)]")
+	_ReplaceStr := flag.String("replacestr", "{}", "[-replacestr=string to replace in output)]")
+	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 
+	debugLog("-- Load Config --")
 	loadConfig(*_Config)
+	debugLog("-- Define Get --")
 	defineGet(*_Define)
+	debugLog("-- Load Define --")
 	loadDefine(*_Define)
-	runCommand(*_NoExceptions)
+	debugLog("-- Run Command --")
+	runCommand(*_NoExceptions, *_ReplaceStr, *_Path)
 
 	os.Exit(0)
 }
 
-func runCommand(noexceptions bool) {
+func runCommand(noexceptions bool, replacestr, path string) {
 	for i := 0; i < len(defines); i++ {
 		if checkWhitelist(defines[i].Command) == true {
-			checkResult(defines[i].Command)
+			checkResult(defines[i].Command, replacestr, path)
 		} else {
-			if noexceptions == false && checkBacklist(defines[i].Command) == false {
-				checkResult(defines[i].Command)
+			if noexceptions == false && checkBlacklist(defines[i].Command) == false {
+				checkResult(defines[i].Command, replacestr, path)
 			}
 		}
 	}
 }
 
-func checkResult(command string) {
+func checkResult(command []string, replacestr, path string) {
+	for i := 0; i < len(defines); i++ {
+		filename := strings.Replace(defines[i].Name, " ", "_", -1)
+		filename = strings.Replace(filename, "　", "_", -1)
+		filename = "." + filename
 
+		before := ReadFile(path + filename)
+		if before == "" {
+			debugLog("no exits before result: " + path + filename)
+			after := cmdExecs(defines[i].Command)
+			Writefile(path+filename, after)
+		} else {
+			after := cmdExecs(defines[i].Command)
+
+			diffs := diff.LineDiff(after, before)
+			cntDiff := countDiff(diffs)
+			if cntDiff > defines[i].Limit {
+				debugLog("Alert: " + defines[i].Alert)
+				Writefile(path+filename, after)
+			} else {
+				debugLog("No Alert")
+			}
+		}
+	}
 }
 
-func checkWhitelist(command string) bool {
+func countDiff(diffs string) int {
+	cnt := 0
+	cnt = cnt + strings.Count(diffs, "+")
+	cnt = cnt + strings.Count(diffs, "-")
+	return cnt
+}
+
+func cmdExecs(commands []string) string {
+	for i := 0; i < len(commands)-1; i++ {
+		cmdExec(commands[i])
+	}
+	return cmdExec(commands[len(commands)-1])
+}
+
+func checkWhitelist(commands []string) bool {
 	for i := 0; i < len(whitelist); i++ {
-		if strings.Index(command, whitelist[i]) != -1 {
-			return true
+		for r := 0; r < len(commands); r++ {
+			if strings.Index(commands[r], whitelist[i]) != -1 {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func checkBlacklist(command string) bool {
+func checkBlacklist(commands []string) bool {
 	for i := 0; i < len(blacklist); i++ {
-		if strings.Index(command, blacklist[i]) != -1 {
-			return true
+		for r := 0; r < len(commands); r++ {
+			if strings.Index(commands[r], blacklist[i]) != -1 {
+				return true
+			}
 		}
 	}
 	return false
@@ -104,37 +150,12 @@ func cmdExec(command string) string {
 
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("コマンド実行エラー:", err)
+		fmt.Println("コマンド実行エラー:", command, err)
 		return ""
 	}
 
 	debugLog(string(output))
 	return string(output)
-}
-
-// 標準出力をキャプチャする
-func (c *Capturer) StartCapturingStdout() {
-	c.saved = os.Stdout
-	var err error
-	c.in, c.out, err = os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-
-	os.Stdout = c.out
-	c.bufferChannel = make(chan string)
-	go func() {
-		var b bytes.Buffer
-		io.Copy(&b, c.in)
-		c.bufferChannel <- b.String()
-	}()
-}
-
-// キャプチャを停止する
-func (c *Capturer) StopCapturingStdout() string {
-	c.out.Close()
-	os.Stdout = c.saved
-	return <-c.bufferChannel
 }
 
 func defineGet(filename string) {
@@ -192,6 +213,26 @@ func Exists(filename string) bool {
 	return err == nil
 }
 
+func ReadFile(fileName string) string {
+	bytes, err := os.ReadFile(fileName)
+	if err != nil {
+		return ""
+	}
+
+	return string(bytes)
+}
+
+func Writefile(filename, strs string) {
+	os.Remove(filename)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	fmt.Fprint(file, strs)
+}
+
 func configRead(filename, sectionName string) []string {
 	var strs []string
 	rFlag := false
@@ -204,10 +245,10 @@ func configRead(filename, sectionName string) []string {
 	for scanner.Scan() {
 		str := scanner.Text()
 		if len(str) > 0 {
-			if rFlag == true && str[0] == 91 {
+			if rFlag == true && str[0] == 91 { // [
 				break
 			} else {
-				if rFlag == true && str[0] != 35 {
+				if rFlag == true && str[0] != 35 { // #
 					debugLog(str)
 					strs = append(strs, str)
 				}
