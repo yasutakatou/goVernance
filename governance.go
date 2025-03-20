@@ -3,22 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 var (
@@ -47,6 +41,7 @@ func main() {
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
+	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow all but the whitelist (true is enable)]")
 
 	flag.Parse()
 
@@ -56,37 +51,65 @@ func main() {
 	loadConfig(*_Config)
 	defineGet(*_Define)
 	loadDefine(*_Define)
-	runCommand()
+	runCommand(*_NoExceptions)
 
 	os.Exit(0)
 }
 
-func runCommand() {
+func runCommand(noexceptions bool) {
 	for i := 0; i < len(defines); i++ {
-		//if checkWhitelist(defines[i].Command) == true && checkBacklist(defines[i].Command) == true {
-		//	result := cmdExec(defines[i].Command)
-		//}
+		if checkWhitelist(defines[i].Command) == true {
+			checkResult(defines[i].Command)
+		} else {
+			if noexceptions == false && checkBacklist(defines[i].Command) == false {
+				checkResult(defines[i].Command)
+			}
+		}
 	}
+}
+
+func checkResult(command string) {
+
+}
+
+func checkWhitelist(command string) bool {
+	for i := 0; i < len(whitelist); i++ {
+		if strings.Index(command, whitelist[i]) != -1 {
+			return true
+		}
+	}
+	return false
+}
+
+func checkBlacklist(command string) bool {
+	for i := 0; i < len(blacklist); i++ {
+		if strings.Index(command, blacklist[i]) != -1 {
+			return true
+		}
+	}
+	return false
 }
 
 func cmdExec(command string) string {
 	var cmd *exec.Cmd
-	var out string
 
 	debugLog("command: " + command)
 
-	cmd = exec.Command(os.Getenv("SHELL"), "-c", command)
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", command)
 
-	c := &Capturer{}
-	c.StartCapturingStdout()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	cmd.Run()
+	} else {
+		cmd = exec.Command(command)
+	}
 
-	out = c.StopCapturingStdout()
-	debugLog(out)
-	return out
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println("コマンド実行エラー:", err)
+		return ""
+	}
+
+	debugLog(string(output))
+	return string(output)
 }
 
 // 標準出力をキャプチャする
@@ -128,13 +151,7 @@ func defineGet(filename string) {
 	defer file.Close()
 
 	for i := 0; i < len(input); i++ {
-		splitStr := strings.Split(input[i], "\t")
-		switch splitStr[0] {
-		case "s3":
-			fmt.Fprint(file, s3get(splitStr[1], splitStr[2]))
-		case "url":
-			fmt.Fprint(file, urlget(splitStr[1]))
-		}
+		fmt.Fprint(file, cmdExec(input[i]))
 	}
 }
 
@@ -173,41 +190,6 @@ func debugLog(message string) {
 func Exists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
-}
-
-func urlget(url string) string {
-	resp, _ := http.Get(url)
-	defer resp.Body.Close()
-	byteArray, _ := io.ReadAll(resp.Body)
-	debugLog(string(byteArray))
-	return string(byteArray)
-}
-
-func s3get(bucket, key string) string {
-	// AWS設定の読み込み
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
-	}
-
-	client := s3.NewFromConfig(cfg)
-
-	output, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		log.Fatalf("failed to get object, %v", err)
-	}
-	defer output.Body.Close()
-
-	body, err := ioutil.ReadAll(output.Body)
-	if err != nil {
-		log.Fatalf("failed to read object body, %v", err)
-	}
-
-	debugLog(string(body))
-	return string(body)
 }
 
 func configRead(filename, sectionName string) []string {
