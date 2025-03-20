@@ -38,12 +38,34 @@ func main() {
 	logging = bool(*_Logging)
 
 	loadConfig(*_Config)
-
-	// define run
-
+	defineGet(*_Define)
 	loadDefine(*_Define)
 
 	os.Exit(0)
+}
+
+func defineGet(filename string) {
+	if len(define) == 0 {
+		return
+	}
+
+	os.Remove(filename)
+
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	for i := 0; i < len(define); i++ {
+		splitStr := strings.Split(define[i], "\t")
+		switch splitStr[0] {
+		case "s3":
+			//s3 file get
+		case "url":
+			fmt.Fprint(file, urlget(splitStr[1]))
+		}
+	}
 }
 
 func debugLog(message string) {
@@ -132,7 +154,7 @@ func loadDefine(filename string) {
 
 	for i := 0; i < len(strs); i++ {
 		splitStr := strings.Split(strs[i], "\t")
-		if len(splitStr) == 2 {
+		if len(splitStr) == 3 {
 			commands := configRead(filename, splitStr[0])
 			convInt, err := strconv.Atoi(splitStr[1])
 			if err == nil {
@@ -140,5 +162,4 @@ func loadDefine(filename string) {
 			}
 		}
 	}
-	fmt.Println(defines)
 }
