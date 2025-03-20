@@ -92,10 +92,21 @@ func checkResult(command []string, replacestr, path string) {
 			cntDiff := countDiff(diffs)
 			if cntDiff > defines[i].Limit {
 				debugLog("Alert: " + defines[i].Alert)
+				alert(defines[i].Name, replacestr, defines[i].Alert)
 				Writefile(path+filename, after)
 			} else {
 				debugLog("No Alert")
 			}
+		}
+	}
+}
+
+func alert(alert, replacestr, message string) {
+	for i := 0; i < len(output); i++ {
+		splitStr := strings.Split(output[i], "\t")
+		if alert == splitStr[0] {
+			command := strings.Replace(splitStr[1], replacestr, message, -1)
+			cmdExec(command)
 		}
 	}
 }
