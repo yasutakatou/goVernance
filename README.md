@@ -47,8 +47,21 @@ del or rm command. (it's simple!)
 
 # usage
 
-- Run this app on the account for which you want to implement controls
-	- 
+- Sets where the control rules are obtained. Also, determine the white list and black list and prepare the configuration file
+- Upload your app onto a computing resource, such as the cloud
+	- EC2, Lambda, or any container is acceptable, but Lambda is recommended because it needs to run on a schedule.
+	- For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run
+- Attach the permissions you want the app to have access to
+	- For example, if you want to control the S3 list, you can add a permission to see the S3 list.
+	- It is a good idea to verify the operation in a sandbox environment such as Cloud shell
+- Set the information you want to control in the configuration for the action
+- With periodic execution, if the difference from the previous operation exceeds a threshold value, the command for the configured alert will be executed and you will be notified.
+
+This allows you to receive alerts when differences occur in resource information, etc., without having to obtain information on the side of the account you want to control, and without having to obtain access rights!<br>
+
+- If you want to add resource information or other information that you want to control, edit the file and add an item to the configuration for the action
+
+You can add the items you want to control by simply appending them to the config for the action! You can also whitelist and blacklist commands that the account administrator does not want to be executed.
 
 # config
 
@@ -64,33 +77,25 @@ Write a command to get the configuration for the action (see below)
 <br>
 note) Multiple commands can be listed. The result of the second and subsequent commands will be added to the action configuration in the form of a postscript.
 
-### [ouput]
-
-This command outputs the results of the execution. The replacement string (default: {}) contains the alert message defined in the configuration for the action
-<br>
-note1) Multiple outputs can be listed. They are executed in order from top to bottom
-<br>
-note2) The definition before the command specifies the name of the configuration definition for the action. In other words, it is possible to change the notification destination depending on the action
-
 ### [whitelist]
 
 Sets the string of commands that can be executed. This prevents unauthorized commands from being defined and executed in the action configuration.
 <br>
+note) Multiple lines of listing can be specified. Also, the specification must be a regular expression.
 
 ### [blacklist]
 
 Sets a string of commands that are not allowed to be executed. This prevents unauthorized commands from being defined and executed in the action configuration.
 <br>
-note) They are evaluated in the order of whitelist to blacklist. In other words, even if you try to filter on the black list, if it is defined on the whitelist, it will be executed.
+note1) They are evaluated in the order of whitelist to blacklist. In other words, even if you try to filter on the black list, if it is defined on the whitelist, it will be executed.
 <br>
+note2) Multiple lines of listing can be specified. Also, the specification must be a regular expression.
+
+### config example
 
 ```
 [input]
 C:\Windows\System32\curl.exe http://localhost:3000/def.ini
-
-[output]
-file list up	echo "{}"
-file list up	aws sns publish --topic-arn {SNS_TOPIC_ARN} --message "{}" --subject "{}"
 
 [whitelist]
 dir /b
@@ -104,18 +109,26 @@ Definitions are set tab-separated
 
 ### [define]
 
-Define the action name, difference threshold, and alert content to be notified if the threshold is exceeded
+format
+
+```
+(action name)	(threshold)	(alert command)
+```
+
+Define the action name, difference threshold, and alert command to be notified if the threshold is exceeded
+<br>
+note) Diff comparisons are made for both increased and decreased values, similar to the Linux diff command. That is, if one resource is replaced by another name, it is treated as two differences.
 
 ### [(actions)]
 
 Define the name of the action in [ ] and the command to execute. Multiple commands can be listed. The last command executed is compared to the last execution, and if the difference exceeds the threshold defined in [define], an alert is issued.
-<br>
-note) Diff comparisons are made for both increased and decreased values, similar to the Linux diff command. That is, if one resource is replaced by another name, it is treated as two differences.
+
+### config example
 
 ```
 [define]
-file list up	1	file list diff
-s3 list command	1	s3 add > 1
+file list up	1	echo "file list diff"
+s3 list command	1	aws sns publish --topic-arn {SNS_TOPIC_ARN} --message "s3 add > 1" --subject "s3 diff alert"
 
 [file list up]
 dir /b
@@ -123,3 +136,53 @@ dir /b
 [s3 list command]
 aws s3 ls
 ```
+
+# options
+
+```
+  -config string
+        [-config=config file)] (default "governance.ini")
+  -debug
+        [-debug=debug mode (true is enable)]
+  -define string
+        [-define=define file)] (default "define.ini")
+  -log
+        [-log=logging mode (true is enable)]
+  -noexceptions
+        [-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]
+  -path string
+        [-path=Output path of the source file to be compared)] (default "/tmp/")
+  -replacestr string
+        [-replacestr=string to replace in output)] (default "{}")
+```
+
+## -config
+
+## -debug
+
+Runs in debug mode. Various output is printed.
+
+## -define
+
+## -log
+
+Option to output the log from debug mode.
+
+## -noexceptions
+
+## -path
+
+Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action<br>
+<br>
+note1) For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run<br>
+<br>
+note2) Note that the path specification changes when running on Windows compared to Linux. ( / -> \\ )<br>
+
+```
+goVernance.exe -path=".\\tmp\\"
+```
+
+## -replacestr
+
+
+# lisence
