@@ -47,6 +47,9 @@ del or rm command. (it's simple!)
 
 # usage
 
+- Run this app on the account for which you want to implement controls
+	- 
+
 # config
 
 This tool uses two types of configurations

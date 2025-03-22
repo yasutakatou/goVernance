@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -16,9 +17,9 @@ import (
 )
 
 var (
-	debug, logging                      bool
-	input, output, whitelist, blacklist []string
-	defines                             []defineStruct
+	debug, logging, noexceptions bool
+	input, whitelist, blacklist  []string
+	defines                      []defineStruct
 )
 
 type defineStruct struct {
@@ -28,20 +29,12 @@ type defineStruct struct {
 	Alert   string
 }
 
-// FYI: https://journal.lampetty.net/entry/capturing-stdout-in-golang
-type Capturer struct {
-	saved         *os.File
-	bufferChannel chan string
-	out           *os.File
-	in            *os.File
-}
-
 func main() {
 	_Debug := flag.Bool("debug", false, "[-debug=debug mode (true is enable)]")
 	_Logging := flag.Bool("log", false, "[-log=logging mode (true is enable)]")
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
-	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow all but the whitelist (true is enable)]")
+	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]")
 	_ReplaceStr := flag.String("replacestr", "{}", "[-replacestr=string to replace in output)]")
 	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared)]")
 
@@ -49,6 +42,7 @@ func main() {
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
+	noexceptions = bool(*_NoExceptions)
 
 	debugLog("-- Load Config --")
 	loadConfig(*_Config)
@@ -57,21 +51,10 @@ func main() {
 	debugLog("-- Load Define --")
 	loadDefine(*_Define)
 	debugLog("-- Run Command --")
-	runCommand(*_NoExceptions, *_ReplaceStr, *_Path)
-
-	os.Exit(0)
-}
-
-func runCommand(noexceptions bool, replacestr, path string) {
 	for i := 0; i < len(defines); i++ {
-		if checkWhitelist(defines[i].Command) == true {
-			checkResult(defines[i].Command, replacestr, path)
-		} else {
-			if noexceptions == false && checkBlacklist(defines[i].Command) == false {
-				checkResult(defines[i].Command, replacestr, path)
-			}
-		}
+		checkResult(defines[i].Command, *_ReplaceStr, *_Path)
 	}
+	os.Exit(0)
 }
 
 func checkResult(command []string, replacestr, path string) {
@@ -83,30 +66,24 @@ func checkResult(command []string, replacestr, path string) {
 		before := ReadFile(path + filename)
 		if before == "" {
 			debugLog("no exits before result: " + path + filename)
-			after := cmdExecs(defines[i].Command)
-			Writefile(path+filename, after)
-		} else {
-			after := cmdExecs(defines[i].Command)
-
-			diffs := diff.LineDiff(after, before)
-			cntDiff := countDiff(diffs)
-			if cntDiff > defines[i].Limit {
-				debugLog("Alert: " + defines[i].Alert)
-				alert(defines[i].Name, replacestr, defines[i].Alert)
+			after, flag := cmdExecs(defines[i].Command)
+			if flag == true {
 				Writefile(path+filename, after)
-			} else {
-				debugLog("No Alert")
 			}
-		}
-	}
-}
+		} else {
+			after, flag := cmdExecs(defines[i].Command)
+			if flag == true {
+				diffs := diff.LineDiff(after, before)
+				cntDiff := countDiff(diffs)
+				if cntDiff > defines[i].Limit {
+					debugLog("Alert: " + defines[i].Alert)
+					cmdExec(defines[i].Alert)
+					Writefile(path+filename, after)
+				} else {
+					debugLog("No Alert")
+				}
 
-func alert(alert, replacestr, message string) {
-	for i := 0; i < len(output); i++ {
-		splitStr := strings.Split(output[i], "\t")
-		if alert == splitStr[0] {
-			command := strings.Replace(splitStr[1], replacestr, message, -1)
-			cmdExec(command)
+			}
 		}
 	}
 }
@@ -118,36 +95,48 @@ func countDiff(diffs string) int {
 	return cnt
 }
 
-func cmdExecs(commands []string) string {
+func cmdExecs(commands []string) (string, bool) {
 	for i := 0; i < len(commands)-1; i++ {
-		cmdExec(commands[i])
+		_, flag := cmdExec(commands[i])
+		if flag == false {
+			return "", false
+		}
 	}
 	return cmdExec(commands[len(commands)-1])
 }
 
-func checkWhitelist(commands []string) bool {
+func checkWhitelist(command string) bool {
 	for i := 0; i < len(whitelist); i++ {
-		for r := 0; r < len(commands); r++ {
-			if strings.Index(commands[r], whitelist[i]) != -1 {
-				return true
-			}
+		regex := regexp.MustCompile(whitelist[i])
+		if regex.MatchString(command) == true {
+			return true
 		}
 	}
 	return false
 }
 
-func checkBlacklist(commands []string) bool {
+func checkBlacklist(command string) bool {
 	for i := 0; i < len(blacklist); i++ {
-		for r := 0; r < len(commands); r++ {
-			if strings.Index(commands[r], blacklist[i]) != -1 {
-				return true
-			}
+		regex := regexp.MustCompile(blacklist[i])
+		if regex.MatchString(command) == true {
+			return true
 		}
 	}
 	return false
 }
 
-func cmdExec(command string) string {
+func cmdExec(command string) (string, bool) {
+	if checkWhitelist(command) == false {
+		if noexceptions == true {
+			debugLog("no permission whitelist[noexceptions]: " + command)
+			return "", false
+		}
+		if checkBlacklist(command) == true {
+			debugLog("no permission blacklist: " + command)
+			return "", false
+		}
+	}
+
 	var cmd *exec.Cmd
 
 	debugLog("command: " + command)
@@ -162,11 +151,11 @@ func cmdExec(command string) string {
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Println("コマンド実行エラー:", command, err)
-		return ""
+		return "", false
 	}
 
 	debugLog(string(output))
-	return string(output)
+	return string(output), true
 }
 
 func defineGet(filename string) {
@@ -183,7 +172,10 @@ func defineGet(filename string) {
 	defer file.Close()
 
 	for i := 0; i < len(input); i++ {
-		fmt.Fprint(file, cmdExec(input[i]))
+		strs, flag := cmdExec(input[i])
+		if flag == true {
+			fmt.Fprint(file, strs)
+		}
 	}
 }
 
@@ -275,7 +267,6 @@ func configRead(filename, sectionName string) []string {
 
 func loadConfig(filename string) {
 	input = configRead(filename, "input")
-	output = configRead(filename, "output")
 	whitelist = configRead(filename, "whitelist")
 	blacklist = configRead(filename, "blacklist")
 }
