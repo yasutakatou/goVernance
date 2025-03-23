@@ -54,11 +54,11 @@ func main() {
 	shell = string(*_Shell)
 
 	debugLog("-- Load Config --")
-	loadConfig(*_Config)
+	loadConfig(*_Path + *_Config)
 	debugLog("-- Define Get --")
-	defineGet(*_Define)
+	defineGet(*_Path + *_Define)
 	debugLog("-- Load Define --")
-	loadDefine(*_Define)
+	loadDefine(*_Path + *_Define)
 	debugLog("-- Run Command --")
 	for i := 0; i < len(defines); i++ {
 		checkResult(defines[i].Command, *_Path)
