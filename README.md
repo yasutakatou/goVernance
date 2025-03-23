@@ -16,7 +16,7 @@ In other words,
 - The results of the execution are compared with the results of the previous execution, and an alert is issued if there is a large difference.
 - Add settings, including additional definitions, according to the governance defined by the organization
 
-This makes it possible to catch up on changes in usage without having to access the resource usage of each cloud!
+**This makes it possible to catch up on changes in usage without having to access the resource usage of each cloud!**
 
 # install
 
@@ -61,7 +61,9 @@ This allows you to receive alerts when differences occur in resource information
 
 - If you want to add resource information or other information that you want to control, edit the file and add an item to the configuration for the action
 
-You can add the items you want to control by simply appending them to the config for the action! You can also whitelist and blacklist commands that the account administrator does not want to be executed.
+You can add the items you want to control by simply appending them to the config for the action! You can also whitelist and blacklist commands that the account administrator does not want to be executed.<br>
+<br>
+note) **It is recommended to always include a setting to skip alerts and to determine if the notifier is working with the notified party according to the scheduled execution, such as ping, and to monitor the alerts.**
 
 # config
 
@@ -69,13 +71,11 @@ This tool uses two types of configurations
 
 ## Configuration for operation setting (default: governance.ini)
 
-Definitions are set tab-separated
-
 ### [input]
 
 Write a command to get the configuration for the action (see below)
 <br>
-note) Multiple commands can be listed. The result of the second and subsequent commands will be added to the action configuration in the form of a postscript.
+note) Multiple commands can be listed. The result of the second and subsequent commands will be **added to the action configuration** in the form of a postscript.
 
 ### [whitelist]
 
@@ -87,7 +87,7 @@ note) Multiple lines of listing can be specified. Also, the specification must b
 
 Sets a string of commands that are not allowed to be executed. This prevents unauthorized commands from being defined and executed in the action configuration.
 <br>
-note1) They are evaluated in the order of whitelist to blacklist. In other words, even if you try to filter on the black list, if it is defined on the whitelist, it will be executed.
+note1) They are evaluated in the order of whitelist to blacklist. In other words, **even if you try to filter on the black list, if it is defined on the whitelist, it will be executed**.
 <br>
 note2) Multiple lines of listing can be specified. Also, the specification must be a regular expression.
 
@@ -95,7 +95,7 @@ note2) Multiple lines of listing can be specified. Also, the specification must 
 
 ```
 [input]
-C:\Windows\System32\curl.exe http://localhost:3000/def.ini
+C:\Windows\System32\curl.exe http://localhost:3000/define.ini
 
 [whitelist]
 dir /b
@@ -103,13 +103,12 @@ dir /b
 [blacklist]
 dir
 ```
-## Cconfig for action (default: define.ini)
 
-Definitions are set tab-separated
+## Cconfig for action (default: define.ini)
 
 ### [define]
 
-format
+format (Definitions are set tab-separated)
 
 ```
 (action name)	(threshold)	(alert command)
@@ -117,11 +116,11 @@ format
 
 Define the action name, difference threshold, and alert command to be notified if the threshold is exceeded
 <br>
-note) Diff comparisons are made for both increased and decreased values, similar to the Linux diff command. That is, if one resource is replaced by another name, it is treated as two differences.
+note) Diff comparisons are made for both increased and decreased values, **similar to the Linux diff command**. That is, if one resource is replaced by another name, it is treated as two differences.
 
 ### [(actions)]
 
-Define the name of the action in [ ] and the command to execute. Multiple commands can be listed. The last command executed is compared to the last execution, and if the difference exceeds the threshold defined in [define], an alert is issued.
+Define the name of the action in [ ] and the command to execute. Multiple commands can be listed. **The last command executed is compared to the last execution**, and if the difference exceeds the threshold defined in [define], an alert is issued.
 
 ### config example
 
@@ -158,11 +157,15 @@ aws s3 ls
 
 ## -config
 
+Specify the path to the configuration file
+
 ## -debug
 
 Runs in debug mode. Various output is printed.
 
 ## -define
+
+Specify the path of the config for the action
 
 ## -log
 
@@ -170,19 +173,21 @@ Option to output the log from debug mode.
 
 ## -noexceptions
 
+This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed.<br>
+<br>
+note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
+
 ## -path
 
 Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action<br>
 <br>
-note1) For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run<br>
+note1) **For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run**<br>
 <br>
-note2) Note that the path specification changes when running on Windows compared to Linux. ( / -> \\ )<br>
+note2) Note that the path specification changes when running on Windows compared to Linux. ( / -> \\\ )<br>
 
 ```
 goVernance.exe -path=".\\tmp\\"
 ```
 
-## -replacestr
-
-
 # lisence
+MIT license

@@ -1,3 +1,10 @@
+/*
+ * Governance implementation tools in a push multi-account environment implemented in the Go language
+ *
+ * @author    yasutakatou
+ * @copyright 2025 yasutakatou
+ * @license   MIT license
+ */
 package main
 
 import (
@@ -35,7 +42,6 @@ func main() {
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
 	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]")
-	_ReplaceStr := flag.String("replacestr", "{}", "[-replacestr=string to replace in output)]")
 	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared)]")
 
 	flag.Parse()
@@ -52,12 +58,12 @@ func main() {
 	loadDefine(*_Define)
 	debugLog("-- Run Command --")
 	for i := 0; i < len(defines); i++ {
-		checkResult(defines[i].Command, *_ReplaceStr, *_Path)
+		checkResult(defines[i].Command, *_Path)
 	}
 	os.Exit(0)
 }
 
-func checkResult(command []string, replacestr, path string) {
+func checkResult(command []string, path string) {
 	for i := 0; i < len(defines); i++ {
 		filename := strings.Replace(defines[i].Name, " ", "_", -1)
 		filename = strings.Replace(filename, "　", "_", -1)
