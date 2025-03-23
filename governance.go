@@ -25,6 +25,7 @@ import (
 
 var (
 	debug, logging, noexceptions bool
+	shell                        string
 	input, whitelist, blacklist  []string
 	defines                      []defineStruct
 )
@@ -42,13 +43,15 @@ func main() {
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
 	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]")
-	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared)]")
+	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared]")
+	_Shell := flag.String("shell", "/bin/bash", "[-shell=Specifies the shell to use in the case of linux]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
+	shell = string(*_Shell)
 
 	debugLog("-- Load Config --")
 	loadConfig(*_Config)
@@ -80,6 +83,9 @@ func checkResult(command []string, path string) {
 			after, flag := cmdExecs(defines[i].Command)
 			if flag == true {
 				diffs := diff.LineDiff(after, before)
+				debugLog(" -- diff -- ")
+				debugLog(diffs)
+				debugLog(" -- -- -- ")
 				cntDiff := countDiff(diffs)
 				if cntDiff > defines[i].Limit {
 					debugLog("Alert: " + defines[i].Alert)
@@ -87,6 +93,7 @@ func checkResult(command []string, path string) {
 					Writefile(path+filename, after)
 				} else {
 					debugLog("No Alert")
+					Writefile(path+filename, after)
 				}
 
 			}
@@ -96,8 +103,17 @@ func checkResult(command []string, path string) {
 
 func countDiff(diffs string) int {
 	cnt := 0
-	cnt = cnt + strings.Count(diffs, "+")
-	cnt = cnt + strings.Count(diffs, "-")
+
+	for _, v := range regexp.MustCompile("\r\n|\n\r|\n|\r").Split(diffs, -1) {
+		regex := regexp.MustCompile(`^[+].*`)
+		if regex.MatchString(v) == true {
+			cnt = cnt + 1
+		}
+		regex = regexp.MustCompile(`^[-].*`)
+		if regex.MatchString(v) == true {
+			cnt = cnt + 1
+		}
+	}
 	return cnt
 }
 
@@ -151,7 +167,7 @@ func cmdExec(command string) (string, bool) {
 		cmd = exec.Command("cmd", "/C", command)
 
 	} else {
-		cmd = exec.Command(command)
+		cmd = exec.Command(shell, "-c", command)
 	}
 
 	output, err := cmd.Output()
