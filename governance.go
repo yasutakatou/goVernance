@@ -21,13 +21,14 @@ import (
 	"time"
 
 	"github.com/andreyvit/diff"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
-	debug, logging, noexceptions bool
-	shell                        string
-	input, whitelist, blacklist  []string
-	defines                      []defineStruct
+	lambdamode, debug, logging, noexceptions bool
+	shell                                    string
+	input, whitelist, blacklist              []string
+	defines                                  []defineStruct
 )
 
 type defineStruct struct {
@@ -48,6 +49,12 @@ func main() {
 
 	flag.Parse()
 
+	if os.Getenv("LAMBDA") == "on" {
+		lambdamode = true
+	} else {
+		lambdamode = false
+	}
+
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
@@ -59,11 +66,25 @@ func main() {
 	defineGet(*_Path + *_Define)
 	debugLog("-- Load Define --")
 	loadDefine(*_Path + *_Define)
+
 	debugLog("-- Run Command --")
-	for i := 0; i < len(defines); i++ {
-		checkResult(defines[i].Command, *_Path)
+	if lambdamode == true {
+		debugLog("lambda mode: on")
+		lambda.Start(handleRequest(*_Path))
+	} else {
+		debugLog("lambda mode: off")
+		for i := 0; i < len(defines); i++ {
+			checkResult(defines[i].Command, *_Path)
+		}
 	}
 	os.Exit(0)
+}
+
+func handleRequest(path string) error {
+	for i := 0; i < len(defines); i++ {
+		checkResult(defines[i].Command, path)
+	}
+	return nil
 }
 
 func checkResult(command []string, path string) {
