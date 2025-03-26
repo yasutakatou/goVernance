@@ -64,7 +64,7 @@ func main() {
 	if os.Getenv("DEBUG") == "on" {
 		debug = true
 	}
-	if os.Getenv("LOGGING") == "on" {
+	if os.Getenv("LOG") == "on" {
 		logging = true
 	}
 	if os.Getenv("NOEXCEPTIONS") == "on" {
@@ -86,7 +86,7 @@ func main() {
 
 	debugLog("-- Load Define --")
 	if os.Getenv("LAMBDA") == "on" {
-		loadDefine(os.Getenv("PATH") + os.Getenv("CONFIG"))
+		loadDefine(os.Getenv("PATH") + os.Getenv("DEFINE"))
 	} else {
 		loadDefine(*_Path + *_Define)
 	}

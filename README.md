@@ -138,6 +138,12 @@ aws s3 ls
 
 # options
 
+This application has a **normal mode** and **lambda mode**, like running on EC2, and the options are set differently
+
+## normal mode
+
+This is the mode in which options are specified as strings from the **command line at startup**
+
 ```
   -config string
         [-config=config file)] (default "governance.ini")
@@ -155,29 +161,29 @@ aws s3 ls
         [-replacestr=string to replace in output)] (default "{}")
 ```
 
-## -config
+### -config
 
 Specify the path to the configuration file
 
-## -debug
+### -debug
 
 Runs in debug mode. Various output is printed.
 
-## -define
+### -define
 
 Specify the path of the config for the action
 
-## -log
+### -log
 
 Option to output the log from debug mode.
 
-## -noexceptions
+### -noexceptions
 
 This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed.<br>
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
 
-## -path
+### -path
 
 Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action<br>
 <br>
@@ -188,6 +194,52 @@ note2) Note that the path specification changes when running on Windows compared
 ```
 goVernance.exe -path=".\\tmp\\"
 ```
+
+### -shell
+
+Specifies the shell to use in the case of linux
+
+## lambda mode
+
+This mode is to start as AWS Lambda. In this case, specify the options as **environment variables** for lambda
+
+### LAMBDA
+
+Starts in lambda mode. Set the environment variable **LAMBDA** to **on**
+
+### CONFIG
+
+Specify the path to the configuration file. Specify a **string** in the environment variable
+
+### DEBUG
+
+Runs in debug mode. Various output is printed. Set the environment variable **DEBUG** to **on**
+
+### DEFINE
+
+Specify the path of the config for the action. Specify a **string** in the environment variable
+
+### LOG
+
+Option to output the log from debug mode. Set the environment variable **LOG** to **on**
+
+### NOEXCEPTIONS
+
+This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed. Set the environment variable **NOEXCEPTIONS** to **on**<br>
+<br>
+note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
+
+### PATH
+
+Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action. Specify a **string** in the environment variable<br>
+<br>
+note1) **For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run**<br>
+<br>
+note2) Note that the path specification changes when running on Windows compared to Linux. ( / -> \\\ )<br>
+
+### SHELL
+
+Specifies the shell to use in the case of linux. Specify a **string** in the environment variable
 
 # lisence
 MIT license
