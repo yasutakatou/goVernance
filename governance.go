@@ -71,23 +71,27 @@ func main() {
 		noexceptions = true
 	}
 
-	debugLog("-- Load Config --")
 	if os.Getenv("LAMBDA") == "on" {
+		debugLog("-- Load Config (" + os.Getenv("PATH") + os.Getenv("CONFIG") + ") --")
 		loadConfig(os.Getenv("PATH") + os.Getenv("CONFIG"))
 	} else {
+		debugLog("-- Load Config (" + *_Path + *_Config + ") --")
 		loadConfig(*_Path + *_Config)
 	}
-	debugLog("-- Define Get --")
+
 	if os.Getenv("LAMBDA") == "on" {
+		debugLog("-- Define Get (" + os.Getenv("PATH") + os.Getenv("CONFIG") + ") --")
 		defineGet(os.Getenv("PATH") + os.Getenv("CONFIG"))
 	} else {
+		debugLog("-- Define Get (" + *_Path + *_Define + ") --")
 		defineGet(*_Path + *_Define)
 	}
 
-	debugLog("-- Load Define --")
 	if os.Getenv("LAMBDA") == "on" {
+		debugLog("-- Load Define (" + os.Getenv("PATH") + os.Getenv("DEFINE") + ") --")
 		loadDefine(os.Getenv("PATH") + os.Getenv("DEFINE"))
 	} else {
+		debugLog("-- Load Define (" + *_Path + *_Define + ") --")
 		loadDefine(*_Path + *_Define)
 	}
 
