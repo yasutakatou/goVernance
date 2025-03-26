@@ -72,27 +72,27 @@ func main() {
 	}
 
 	if os.Getenv("LAMBDA") == "on" {
-		debugLog("-- Load Config (" + os.Getenv("PATH") + os.Getenv("CONFIG") + ") --")
-		loadConfig(os.Getenv("PATH") + os.Getenv("CONFIG"))
+		debugLog("-- Load Config (" + os.Getenv("CONFIG") + ") --")
+		loadConfig(os.Getenv("CONFIG"))
 	} else {
-		debugLog("-- Load Config (" + *_Path + *_Config + ") --")
-		loadConfig(*_Path + *_Config)
+		debugLog("-- Load Config (" + *_Config + ") --")
+		loadConfig(*_Config)
 	}
 
 	if os.Getenv("LAMBDA") == "on" {
-		debugLog("-- Define Get (" + os.Getenv("PATH") + os.Getenv("CONFIG") + ") --")
-		defineGet(os.Getenv("PATH") + os.Getenv("CONFIG"))
+		debugLog("-- Define Get (" + os.Getenv("DEFINE") + ") --")
+		defineGet(os.Getenv("DEFINE"))
 	} else {
-		debugLog("-- Define Get (" + *_Path + *_Define + ") --")
-		defineGet(*_Path + *_Define)
+		debugLog("-- Define Get (" + *_Define + ") --")
+		defineGet(*_Define)
 	}
 
 	if os.Getenv("LAMBDA") == "on" {
-		debugLog("-- Load Define (" + os.Getenv("PATH") + os.Getenv("DEFINE") + ") --")
-		loadDefine(os.Getenv("PATH") + os.Getenv("DEFINE"))
+		debugLog("-- Load Define (" + os.Getenv("DEFINE") + ") --")
+		loadDefine(os.Getenv("DEFINE"))
 	} else {
-		debugLog("-- Load Define (" + *_Path + *_Define + ") --")
-		loadDefine(*_Path + *_Define)
+		debugLog("-- Load Define (" + *_Define + ") --")
+		loadDefine(*_Define)
 	}
 
 	debugLog("-- Run Command --")
