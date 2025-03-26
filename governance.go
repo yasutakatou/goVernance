@@ -9,6 +9,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -26,7 +27,7 @@ import (
 
 var (
 	lambdamode, debug, logging, noexceptions bool
-	shell                                    string
+	shell, path                              string
 	input, whitelist, blacklist              []string
 	defines                                  []defineStruct
 )
@@ -36,6 +37,10 @@ type defineStruct struct {
 	Command []string
 	Limit   int
 	Alert   string
+}
+
+type MyEvent struct {
+	Name string `json:"name"`
 }
 
 func main() {
@@ -53,10 +58,12 @@ func main() {
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
 	shell = string(*_Shell)
+	path = string(*_Path)
 
 	if os.Getenv("LAMBDA") == "on" {
 		lambdamode = true
 		shell = os.Getenv("SHELL")
+		path = os.Getenv("PATH")
 	} else {
 		lambdamode = false
 	}
@@ -98,24 +105,30 @@ func main() {
 	debugLog("-- Run Command --")
 	if lambdamode == true {
 		debugLog("lambda mode: on")
-		lambda.Start(handleRequest(*_Path))
+		lambda.Start(HandleRequest)
 	} else {
 		debugLog("lambda mode: off")
 		for i := 0; i < len(defines); i++ {
-			checkResult(defines[i].Command, *_Path)
+			checkResult(defines[i].Command)
 		}
 	}
 	os.Exit(0)
 }
 
-func handleRequest(path string) error {
+func HandleRequest(ctx context.Context, event *MyEvent) (*string, error) {
 	for i := 0; i < len(defines); i++ {
-		checkResult(defines[i].Command, path)
+		checkResult(defines[i].Command)
 	}
-	return nil
+
+	if event == nil {
+		return nil, fmt.Errorf("received nil event")
+	}
+
+	message := fmt.Sprintf("goVernance %s!", event.Name)
+	return &message, nil
 }
 
-func checkResult(command []string, path string) {
+func checkResult(command []string) {
 	for i := 0; i < len(defines); i++ {
 		filename := strings.Replace(defines[i].Name, " ", "_", -1)
 		filename = strings.Replace(filename, "　", "_", -1)
