@@ -49,23 +49,47 @@ func main() {
 
 	flag.Parse()
 
-	if os.Getenv("LAMBDA") == "on" {
-		lambdamode = true
-	} else {
-		lambdamode = false
-	}
-
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
 	shell = string(*_Shell)
 
+	if os.Getenv("LAMBDA") == "on" {
+		lambdamode = true
+		shell = os.Getenv("SHELL")
+	} else {
+		lambdamode = false
+	}
+
+	if os.Getenv("DEBUG") == "on" {
+		debug = true
+	}
+	if os.Getenv("LOGGING") == "on" {
+		logging = true
+	}
+	if os.Getenv("NOEXCEPTIONS") == "on" {
+		noexceptions = true
+	}
+
 	debugLog("-- Load Config --")
-	loadConfig(*_Path + *_Config)
+	if os.Getenv("LAMBDA") == "on" {
+		loadConfig(os.Getenv("PATH") + os.Getenv("CONFIG"))
+	} else {
+		loadConfig(*_Path + *_Config)
+	}
 	debugLog("-- Define Get --")
-	defineGet(*_Path + *_Define)
+	if os.Getenv("LAMBDA") == "on" {
+		defineGet(os.Getenv("PATH") + os.Getenv("CONFIG"))
+	} else {
+		defineGet(*_Path + *_Define)
+	}
+
 	debugLog("-- Load Define --")
-	loadDefine(*_Path + *_Define)
+	if os.Getenv("LAMBDA") == "on" {
+		loadDefine(os.Getenv("PATH") + os.Getenv("CONFIG"))
+	} else {
+		loadDefine(*_Path + *_Define)
+	}
 
 	debugLog("-- Run Command --")
 	if lambdamode == true {
