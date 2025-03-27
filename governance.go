@@ -49,7 +49,7 @@ func main() {
 	_Config := flag.String("config", "governance.ini", "[-config=config file)]")
 	_Define := flag.String("define", "define.ini", "[-define=define file)]")
 	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]")
-	_Path := flag.String("path", "/tmp/", "[-path=Output path of the source file to be compared]")
+	_Tmpath := flag.String("tmppath", "/tmp/", "[-tmppath=Output temporary path of the source file to be compared]")
 	_Shell := flag.String("shell", "/bin/bash", "[-shell=Specifies the shell to use in the case of linux]")
 
 	flag.Parse()
@@ -58,12 +58,12 @@ func main() {
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
 	shell = string(*_Shell)
-	path = string(*_Path)
+	path = string(*_Tmpath)
 
 	if os.Getenv("LAMBDA") == "on" {
 		lambdamode = true
 		shell = os.Getenv("SHELL")
-		path = os.Getenv("PATH")
+		path = os.Getenv("TMPPATH")
 	} else {
 		lambdamode = false
 	}
