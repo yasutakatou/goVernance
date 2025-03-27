@@ -183,7 +183,11 @@ This mode treats commands that are not on the white list as blacklisted and does
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
 
-### -path
+### -shell
+
+Specifies the shell to use in the case of linux
+
+### -tmppath
 
 Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action<br>
 <br>
@@ -194,10 +198,6 @@ note2) Note that the path specification changes when running on Windows compared
 ```
 goVernance.exe -path=".\\tmp\\"
 ```
-
-### -shell
-
-Specifies the shell to use in the case of linux
 
 ## lambda mode
 
@@ -229,17 +229,17 @@ This mode treats commands that are not on the white list as blacklisted and does
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
 
-### PATH
+### SHELL
+
+Specifies the shell to use in the case of linux. Specify a **string** in the environment variable
+
+### TMPPATH
 
 Specify the path where the temporary file from the previous run is to be created. The temporary file will be created with spaces converted to underscores in the configuration definition for the action. Specify a **string** in the environment variable<br>
 <br>
 note1) **For serverless operation, specify a non-volatile area such as /tmp to refer to the output of the previous run**<br>
 <br>
 note2) Note that the path specification changes when running on Windows compared to Linux. ( / -> \\\ )<br>
-
-### SHELL
-
-Specifies the shell to use in the case of linux. Specify a **string** in the environment variable
 
 # lisence
 MIT license
