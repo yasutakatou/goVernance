@@ -115,17 +115,13 @@ func main() {
 	os.Exit(0)
 }
 
-func HandleRequest(ctx context.Context, event *MyEvent) (*string, error) {
+func HandleRequest(ctx context.Context) *string {
 	for i := 0; i < len(defines); i++ {
 		checkResult(defines[i].Command)
 	}
 
-	if event == nil {
-		return nil, fmt.Errorf("received nil event")
-	}
-
-	message := fmt.Sprintf("goVernance %s!", event.Name)
-	return &message, nil
+	message := fmt.Sprintf("governance done!")
+	return &message
 }
 
 func checkResult(command []string) {
