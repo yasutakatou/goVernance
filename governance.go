@@ -115,13 +115,13 @@ func main() {
 	os.Exit(0)
 }
 
-func HandleRequest(ctx context.Context) *string {
+func HandleRequest(ctx context.Context) (*string, error) {
 	for i := 0; i < len(defines); i++ {
 		checkResult(defines[i].Command)
 	}
 
 	message := fmt.Sprintf("governance done!")
-	return &message
+	return &message, nil
 }
 
 func checkResult(command []string) {
