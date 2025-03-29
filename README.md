@@ -67,12 +67,21 @@ note) **It is recommended to always include a setting to skip alerts and to dete
 
 ## lambda mode
 
+Example of operating in **lambda mode**<br>
+Create a lambda layer in aws cli
+
 [Lambda関数でAWS CLIを使用する](https://qiita.com/DaichiAndoh/items/c738a0f12c51e30f9b93)
+
+Create a lambda function. The **timeout should be sufficient** for each command to execute.<br>
+(If the lambda limit is exceeded, please separate the functions or take other measures.)
 
 ![image](https://github.com/user-attachments/assets/c2f3db3b-81a6-4ab5-9742-ea635dd832f0)
 
+Set parameters to environment variables
+
 ![image](https://github.com/user-attachments/assets/db0e4131-b327-447e-a7ab-4959fa3ad64d)
 
+Upload the golang zip file to the lambda function. **Include the following configurations**(governance.ini) in the zip file
 
 ```
 [input]
@@ -87,6 +96,9 @@ aws s3 cp s3://defines-s3-backet/define.ini /tmp/define.ini
 .*aws ec2.*
 ```
 
+On the S3 side, describe the commands to be compared<br>
+**Attach to lambda a policy** and its role that allows lambda functions access to S3
+
 ```
 [define]
 s3 list up	1	aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
@@ -95,7 +107,11 @@ s3 list up	1	aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:12825970552
 aws s3 ls
 ```
 
+lambda compares the differences at each execution. Create two new S3 buckets as follows
+
 ![image](https://github.com/user-attachments/assets/a9942868-298b-4735-a739-5ec7b690d122)
+
+function detects differences and executes an action because of one or more differences
 
 ```
 Status: Succeeded
@@ -126,7 +142,11 @@ REPORT RequestId: 65b1723d-8fe1-4565-a3be-10d666e6b317	Duration: 26906.24 ms	Bil
 Request ID: 65b1723d-8fe1-4565-a3be-10d666e6b317
 ```
 
+You have been notified by email according to your SNS action
+
 ![image](https://github.com/user-attachments/assets/141f9ae0-5e6e-42f3-a880-0a3d98138bd2)
+
+note) Please continue to consider a visualization mechanism, such as linking email notifications with Power Platform, etc., to create a dashboard as numerical values.
 
 # config
 
