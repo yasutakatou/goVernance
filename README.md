@@ -65,6 +65,64 @@ You can add the items you want to control by simply appending them to the config
 <br>
 note) **It is recommended to always include a setting to skip alerts and to determine if the notifier is working with the notified party according to the scheduled execution, such as ping, and to monitor the alerts.**
 
+## lambda mode
+
+![image](https://github.com/user-attachments/assets/c2f3db3b-81a6-4ab5-9742-ea635dd832f0)
+
+![image](https://github.com/user-attachments/assets/db0e4131-b327-447e-a7ab-4959fa3ad64d)
+
+
+```
+[define]
+aws s3 cp s3://defines-s3-backet/define.ini .
+
+s3 list up      1       aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
+
+[s3 list up]
+aws s3 ls
+```
+
+```
+[define]
+s3 list up	1	aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
+
+[s3 list up]
+aws s3 ls
+```
+
+![image](https://github.com/user-attachments/assets/a9942868-298b-4735-a739-5ec7b690d122)
+
+```
+Status: Succeeded
+Test Event Name: test
+
+Response:
+"governance done!"
+
+Function Logs:
+START RequestId: 65b1723d-8fe1-4565-a3be-10d666e6b317 Version: $LATEST
+command: aws s3 ls
+2025-03-23 08:40:02 defines-s3-backet
+2025-03-27 06:43:27 defines-s3-backet2
+2025-03-27 06:43:35 defines-s3-backet3
+-- diff -- 
+2025-03-23 08:40:02 defines-s3-backet
+-2025-03-27 06:43:27 defines-s3-backet2
+-2025-03-27 06:43:35 defines-s3-backet3
+-- -- -- 
+Alert: aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
+command: aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
+{
+"MessageId": "2d62a728-c0a5-5764-9304-c77636ae3d95"
+}
+END RequestId: 65b1723d-8fe1-4565-a3be-10d666e6b317
+REPORT RequestId: 65b1723d-8fe1-4565-a3be-10d666e6b317	Duration: 26906.24 ms	Billed Duration: 26907 ms	Memory Size: 128 MB	Max Memory Used: 119 MB
+
+Request ID: 65b1723d-8fe1-4565-a3be-10d666e6b317
+```
+
+![image](https://github.com/user-attachments/assets/141f9ae0-5e6e-42f3-a880-0a3d98138bd2)
+
 # config
 
 This tool uses two types of configurations
