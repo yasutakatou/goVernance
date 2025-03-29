@@ -73,13 +73,16 @@ note) **It is recommended to always include a setting to skip alerts and to dete
 
 
 ```
-[define]
-aws s3 cp s3://defines-s3-backet/define.ini .
+[input]
+aws s3 cp s3://defines-s3-backet/define.ini /tmp/define.ini
 
-s3 list up      1       aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email" --message "s3 add > 1" --subject "s3 diff alert"
+[whitelist]
+.*aws s3 ls.*
+.*aws s3 cp s3://defines-s3-backet/define.ini.*
+.*aws sns publish --topic-arn "arn:aws:sns:ap-northeast-1:128259705520:email".*
 
-[s3 list up]
-aws s3 ls
+[blacklist]
+.*aws ec2.*
 ```
 
 ```
