@@ -67,7 +67,7 @@ note) **It is recommended to always include a setting to skip alerts and to dete
 
 ## lambda mode
 
-(Lambda関数でAWS CLIを使用する)[https://qiita.com/DaichiAndoh/items/c738a0f12c51e30f9b93]
+[Lambda関数でAWS CLIを使用する](https://qiita.com/DaichiAndoh/items/c738a0f12c51e30f9b93)
 
 ![image](https://github.com/user-attachments/assets/c2f3db3b-81a6-4ab5-9742-ea635dd832f0)
 
