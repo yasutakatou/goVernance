@@ -150,8 +150,9 @@ func checkResult(command []string) {
 				if cntDiff > defines[i].Limit {
 					if len(forcealert) > 0 {
 						for r := 0; r < len(forcealert); r++ {
-							debugLog("[Force] Alert: " + forcealert[r])
-							cmdExec(forcealert[r])
+							tmpStr := strings.Replace(forcealert[r], replacestr, defines[i].Name, -1)
+							debugLog("[Force] Alert: " + tmpStr)
+							cmdExec(tmpStr)
 						}
 					} else {
 						debugLog("Alert: " + defines[i].Alert)
@@ -336,7 +337,7 @@ func configRead(filename, sectionName string) []string {
 	scanner := bufio.NewScanner(data)
 	for scanner.Scan() {
 		str := scanner.Text()
-		if len(str) > 0 {
+		if len(str) > 1 {
 			if rFlag == true && str[0] == 91 { // [
 				break
 			} else {
