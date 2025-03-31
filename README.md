@@ -94,6 +94,8 @@ aws s3 cp s3://defines-s3-backet/define.ini /tmp/define.ini
 
 [blacklist]
 .*aws ec2.*
+
+[forcealert]
 ```
 
 On the S3 side, describe the commands to be compared<br>
@@ -174,6 +176,12 @@ note1) They are evaluated in the order of whitelist to blacklist. In other words
 <br>
 note2) Multiple lines of listing can be specified. Also, the specification must be a regular expression.
 
+### [forcealert] (v0.2-)
+
+**Override the alert notification commands** on the config side if you do not want the config for action to use any of the alert notification commands.<br>
+<br>
+note) The notification is specified in the **replacement string**(default: {}) with the name of the action in the configuration for the action
+
 ### config example
 
 ```
@@ -185,6 +193,9 @@ dir /b
 
 [blacklist]
 dir
+
+[forcealert]
+echo "force alert! : {}"
 ```
 
 ## Cconfig for action (default: define.ini)
@@ -266,6 +277,8 @@ This mode treats commands that are not on the white list as blacklisted and does
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
 
+### -replacestr
+
 ### -shell
 
 Specifies the shell to use in the case of linux
@@ -311,6 +324,8 @@ Option to output the log from debug mode. Set the environment variable **LOG** t
 This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed. Set the environment variable **NOEXCEPTIONS** to **on**<br>
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
+
+### 
 
 ### SHELL
 
