@@ -3,7 +3,7 @@
  *
  * @author    yasutakatou
  * @copyright 2025 yasutakatou
- * @license   MIT license
+ * @license   MIT license, Apache License, version 2.0
  */
 package main
 
