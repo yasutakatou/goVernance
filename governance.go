@@ -27,8 +27,8 @@ import (
 
 var (
 	lambdamode, debug, logging, noexceptions bool
-	shell, path                              string
-	input, whitelist, blacklist              []string
+	replacestr, shell, path      string
+	forcealert,input, whitelist, blacklist              []string
 	defines                                  []defineStruct
 )
 
@@ -51,6 +51,7 @@ func main() {
 	_NoExceptions := flag.Bool("noexceptions", false, "[-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]")
 	_Tmpath := flag.String("tmppath", "/tmp/", "[-tmppath=Output temporary path of the source file to be compared]")
 	_Shell := flag.String("shell", "/bin/bash", "[-shell=Specifies the shell to use in the case of linux]")
+	_Replacestr := flag.String("replacestr", "{}", "[-replacestr=Replacement string used for forced alerts.]")
 
 	flag.Parse()
 
@@ -59,6 +60,7 @@ func main() {
 	noexceptions = bool(*_NoExceptions)
 	shell = string(*_Shell)
 	path = string(*_Tmpath)
+	replacestr = string(*_Replacestr)
 
 	if os.Getenv("LAMBDA") == "on" {
 		lambdamode = true
@@ -146,6 +148,7 @@ func checkResult(command []string) {
 				debugLog(" -- -- -- ")
 				cntDiff := countDiff(diffs)
 				if cntDiff > defines[i].Limit {
+					if len
 					debugLog("Alert: " + defines[i].Alert)
 					cmdExec(defines[i].Alert)
 					Writefile(path+filename, after)
@@ -349,6 +352,7 @@ func loadConfig(filename string) {
 	input = configRead(filename, "input")
 	whitelist = configRead(filename, "whitelist")
 	blacklist = configRead(filename, "blacklist")
+	forcealert = configRead(filename, "forcealert")
 }
 
 func loadDefine(filename string) {
