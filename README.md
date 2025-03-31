@@ -341,3 +341,4 @@ note2) Note that the path specification changes when running on Windows compared
 
 # lisence
 MIT license
+Apache License, version 2.0
