@@ -66,6 +66,7 @@ func main() {
 		lambdamode = true
 		shell = os.Getenv("SHELL")
 		path = os.Getenv("TMPPATH")
+		replacestr = os.Getenv("REPLACESTR")
 	} else {
 		lambdamode = false
 	}
