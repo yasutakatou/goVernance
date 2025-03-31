@@ -279,6 +279,29 @@ note) **By default, it operates in a lax mode**, executing commands that are not
 
 ### -replacestr
 
+The action name will be replaced by the definition of this string when the alert command is forced<br>
+<br>
+config example)
+```
+[forcealert]
+echo "force alert! : {}"
+```
+
+action config example)
+
+```
+[define]
+file list up	1	echo "file list diff"
+```
+
+output)
+
+```
+force alert! : file list up
+```
+
+note) This mode applies to all of the [forcealert] sections of the config
+
 ### -shell
 
 Specifies the shell to use in the case of linux
@@ -325,7 +348,28 @@ This mode treats commands that are not on the white list as blacklisted and does
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
 
-### 
+### REPLACESTR
+
+The action name will be replaced by the definition of this string when the alert command is forced<br>
+<br>
+config example)
+```
+[forcealert]
+echo "force alert! : {}"
+```
+
+action config example)
+
+```
+[define]
+file list up	1	echo "file list diff"
+```
+
+output)
+
+```
+force alert! : file list up
+```
 
 ### SHELL
 
