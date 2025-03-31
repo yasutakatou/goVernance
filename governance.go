@@ -27,8 +27,8 @@ import (
 
 var (
 	lambdamode, debug, logging, noexceptions bool
-	replacestr, shell, path      string
-	forcealert,input, whitelist, blacklist              []string
+	replacestr, shell, path                  string
+	forcealert, input, whitelist, blacklist  []string
 	defines                                  []defineStruct
 )
 
@@ -148,9 +148,15 @@ func checkResult(command []string) {
 				debugLog(" -- -- -- ")
 				cntDiff := countDiff(diffs)
 				if cntDiff > defines[i].Limit {
-					if len
-					debugLog("Alert: " + defines[i].Alert)
-					cmdExec(defines[i].Alert)
+					if len(forcealert) > 0 {
+						for r := 0; r < len(forcealert); r++ {
+							debugLog("[Force] Alert: " + forcealert[r])
+							cmdExec(forcealert[r])
+						}
+					} else {
+						debugLog("Alert: " + defines[i].Alert)
+						cmdExec(defines[i].Alert)
+					}
 					Writefile(path+filename, after)
 				} else {
 					debugLog("No Alert")
