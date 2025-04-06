@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andreyvit/diff"
@@ -26,10 +27,10 @@ import (
 )
 
 var (
-	lambdamode, debug, logging, noexceptions bool
-	replacestr, shell, path                  string
-	forcealert, input, whitelist, blacklist  []string
-	defines                                  []defineStruct
+	parallel, lambdamode, debug, logging, noexceptions bool
+	replacestr, shell, path                            string
+	forcealert, input, whitelist, blacklist            []string
+	defines                                            []defineStruct
 )
 
 type defineStruct struct {
@@ -52,12 +53,14 @@ func main() {
 	_Tmpath := flag.String("tmppath", "/tmp/", "[-tmppath=Output temporary path of the source file to be compared]")
 	_Shell := flag.String("shell", "/bin/bash", "[-shell=Specifies the shell to use in the case of linux]")
 	_Replacestr := flag.String("replacestr", "{}", "[-replacestr=Replacement string used for forced alerts.]")
+	_Parallel := flag.Bool("parallel", false, "[-parallel=Mode to execute tasks in parallel (true is enable)]")
 
 	flag.Parse()
 
 	debug = bool(*_Debug)
 	logging = bool(*_Logging)
 	noexceptions = bool(*_NoExceptions)
+	parallel = bool(*_Parallel)
 	shell = string(*_Shell)
 	path = string(*_Tmpath)
 	replacestr = string(*_Replacestr)
@@ -76,6 +79,9 @@ func main() {
 	}
 	if os.Getenv("LOG") == "on" {
 		logging = true
+	}
+	if os.Getenv("PARALLEL") == "on" {
+		parallel = true
 	}
 	if os.Getenv("NOEXCEPTIONS") == "on" {
 		noexceptions = true
@@ -111,61 +117,86 @@ func main() {
 		lambda.Start(HandleRequest)
 	} else {
 		debugLog("lambda mode: off")
-		for i := 0; i < len(defines); i++ {
-			checkResult(defines[i].Command)
+		if parallel == true {
+			wg := new(sync.WaitGroup)
+
+			for i := 0; i < len(defines); i++ {
+				wg.Add(1)
+				go func(n int) {
+					checkResult(defines[i])
+					wg.Done()
+				}(i)
+			}
+			wg.Wait()
+		} else {
+			for i := 0; i < len(defines); i++ {
+				checkResult(defines[i])
+			}
 		}
 	}
 	os.Exit(0)
 }
 
 func HandleRequest(ctx context.Context) (*string, error) {
-	for i := 0; i < len(defines); i++ {
-		checkResult(defines[i].Command)
+	if parallel == true {
+		wg := new(sync.WaitGroup)
+
+		for i := 0; i < len(defines); i++ {
+			wg.Add(1)
+			go func(n int) {
+				checkResult(defines[i])
+				wg.Done()
+			}(i)
+		}
+		wg.Wait()
+	} else {
+		for i := 0; i < len(defines); i++ {
+			checkResult(defines[i])
+		}
 	}
 
 	message := fmt.Sprintf("governance done!")
 	return &message, nil
 }
 
-func checkResult(command []string) {
-	for i := 0; i < len(defines); i++ {
-		filename := strings.Replace(defines[i].Name, " ", "_", -1)
-		filename = strings.Replace(filename, "　", "_", -1)
-		filename = "." + filename
+func checkResult(define defineStruct) {
+	filename := strings.Replace(define.Name, " ", "_", -1)
+	filename = strings.Replace(filename, "　", "_", -1)
+	filename = "." + filename
 
-		before := ReadFile(path + filename)
-		if before == "" {
-			debugLog("no exits before result: " + path + filename)
-			after, flag := cmdExecs(defines[i].Command)
-			if flag == true {
+	before := ReadFile(path + filename)
+	if before == "" {
+		debugLog("no exits before result: " + path + filename)
+		debugLog("action: " + define.Name)
+		after, flag := cmdExecs(define)
+		if flag == true {
+			Writefile(path+filename, after)
+		}
+	} else {
+		after, flag := cmdExecs(define)
+		if flag == true {
+			diffs := diff.LineDiff(after, before)
+			debugLog(" -- diff -- ")
+			debugLog(diffs)
+			debugLog(" -- -- -- ")
+			cntDiff := countDiff(diffs)
+			if cntDiff > define.Limit {
+				if len(forcealert) > 0 {
+					for r := 0; r < len(forcealert); r++ {
+						tmpStr := strings.Replace(forcealert[r], replacestr, define.Name, -1)
+						debugLog("[Force] Alert: " + tmpStr)
+						cmdExec("", tmpStr)
+					}
+				} else {
+					debugLog("Alert: " + define.Alert)
+					cmdExec("", define.Alert)
+				}
+				Writefile(path+filename, after)
+			} else {
+				debugLog("No Alert")
 				Writefile(path+filename, after)
 			}
-		} else {
-			after, flag := cmdExecs(defines[i].Command)
-			if flag == true {
-				diffs := diff.LineDiff(after, before)
-				debugLog(" -- diff -- ")
-				debugLog(diffs)
-				debugLog(" -- -- -- ")
-				cntDiff := countDiff(diffs)
-				if cntDiff > defines[i].Limit {
-					if len(forcealert) > 0 {
-						for r := 0; r < len(forcealert); r++ {
-							tmpStr := strings.Replace(forcealert[r], replacestr, defines[i].Name, -1)
-							debugLog("[Force] Alert: " + tmpStr)
-							cmdExec(tmpStr)
-						}
-					} else {
-						debugLog("Alert: " + defines[i].Alert)
-						cmdExec(defines[i].Alert)
-					}
-					Writefile(path+filename, after)
-				} else {
-					debugLog("No Alert")
-					Writefile(path+filename, after)
-				}
 
-			}
 		}
 	}
 }
@@ -186,14 +217,14 @@ func countDiff(diffs string) int {
 	return cnt
 }
 
-func cmdExecs(commands []string) (string, bool) {
-	for i := 0; i < len(commands)-1; i++ {
-		_, flag := cmdExec(commands[i])
+func cmdExecs(define defineStruct) (string, bool) {
+	for i := 0; i < len(define.Command)-1; i++ {
+		_, flag := cmdExec(define.Name, define.Command[i])
 		if flag == false {
 			return "", false
 		}
 	}
-	return cmdExec(commands[len(commands)-1])
+	return cmdExec(define.Name, define.Command[len(define.Command)-1])
 }
 
 func checkWhitelist(command string) bool {
@@ -216,7 +247,7 @@ func checkBlacklist(command string) bool {
 	return false
 }
 
-func cmdExec(command string) (string, bool) {
+func cmdExec(name, command string) (string, bool) {
 	if checkWhitelist(command) == false {
 		if noexceptions == true {
 			debugLog("no permission whitelist[noexceptions]: " + command)
@@ -230,7 +261,7 @@ func cmdExec(command string) (string, bool) {
 
 	var cmd *exec.Cmd
 
-	debugLog("command: " + command)
+	debugLog("action: [" + name + "] command: " + command)
 
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/C", command)
@@ -263,7 +294,7 @@ func defineGet(filename string) {
 	defer file.Close()
 
 	for i := 0; i < len(input); i++ {
-		strs, flag := cmdExec(input[i])
+		strs, flag := cmdExec("", input[i])
 		if flag == true {
 			fmt.Fprint(file, strs)
 		}
