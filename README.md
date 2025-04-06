@@ -249,10 +249,12 @@ This is the mode in which options are specified as strings from the **command li
         [-log=logging mode (true is enable)]
   -noexceptions
         [-noexceptions=Do not allow everything that is not on the whitelist (true is enable)]
-  -path string
-        [-path=Output path of the source file to be compared)] (default "/tmp/")
+  -parallel
+	[-parallel=Mode to execute tasks in parallel (true is enable)]
   -replacestr string
         [-replacestr=string to replace in output)] (default "{}")
+  -tmppath string
+        [-tmppath=Output path of the source file to be compared)] (default "/tmp/")
 ```
 
 ### -config
@@ -276,6 +278,12 @@ Option to output the log from debug mode.
 This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed.<br>
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
+
+### -parallel (v0.3-)
+
+Mode to execute tasks in parallel
+<br>
+note) Parallel execution mode when there are time constraints, such as in lambda execution mode.
 
 ### -replacestr
 
@@ -347,6 +355,12 @@ Option to output the log from debug mode. Set the environment variable **LOG** t
 This mode treats commands that are not on the white list as blacklisted and does not allow them to be executed. Set the environment variable **NOEXCEPTIONS** to **on**<br>
 <br>
 note) **By default, it operates in a lax mode**, executing commands that are not on the whitelist and not on the blacklist.
+
+### PARALLEL (v0.3-)
+
+Mode to execute tasks in parallel
+<br>
+note) Parallel execution mode when there are time constraints, such as in lambda execution mode.
 
 ### REPLACESTR
 
