@@ -281,7 +281,7 @@ note) **By default, it operates in a lax mode**, executing commands that are not
 
 ### -parallel (v0.3-)
 
-Mode to execute tasks in parallel
+Mode to execute tasks in parallel<br>
 <br>
 note) Parallel execution mode when there are time constraints, such as in lambda execution mode.
 
@@ -358,7 +358,7 @@ note) **By default, it operates in a lax mode**, executing commands that are not
 
 ### PARALLEL (v0.3-)
 
-Mode to execute tasks in parallel
+Mode to execute tasks in parallel<br>
 <br>
 note) Parallel execution mode when there are time constraints, such as in lambda execution mode.
 
